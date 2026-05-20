@@ -1,5 +1,8 @@
 import app from "./src/app.js";
 
-app.listen(3000, () => {
-    console.log("AI server is running on port 3000");
+const PORT = Number(process.env.PORT || 3000);
+
+// Bind to all interfaces so the service is reachable from Docker, Kind, and Codespaces port forwarding.
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`AI server is running on port ${PORT}`);
 });

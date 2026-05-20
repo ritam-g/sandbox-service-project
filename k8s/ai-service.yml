@@ -1,14 +1,21 @@
-kind: Service
+# PURPOSE: ClusterIP Service for the AI Deployment in local Kind development.
+# WHY THIS EXISTS: Give the Ingress and other pods a stable virtual IP and DNS name.
+# DEVELOPMENT BENEFIT: Simple service discovery with low overhead and easy port debugging.
+# PRODUCTION NOTE: Production can keep ClusterIP, but should layer in observability and policy.
 apiVersion: v1
+kind: Service
 metadata:
-  name:  ai-service
+  name: ai-service
   labels:
-    app:  ai-server
+    app.kubernetes.io/name: ai
+    app.kubernetes.io/component: agent
 spec:
+  type: ClusterIP
   selector:
-    app:  ai-server
-  type:  ClusterIP
+    app.kubernetes.io/name: ai
+    app.kubernetes.io/component: agent
   ports:
-  - name:  name-of-the-port
-    port:  80
-    targetPort:  3000
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

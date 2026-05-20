@@ -22,5 +22,8 @@
     "langchain": "^1.4.1",
     "morgan": "^1.10.1",
     "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

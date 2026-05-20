@@ -1,13 +1,21 @@
+# PURPOSE: Local-development container image for the AI service.
+# WHY THIS EXISTS: Keep dependency installs cached and the runtime image lean for Codespaces + Kind.
+# DEVELOPMENT BENEFIT: Fast rebuilds, fast startup, and lower memory usage during iteration.
+# PRODUCTION NOTE: Production should use a separate hardened image and stronger runtime controls.
 FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+# Copy package metadata first so dependency installs stay cached across source-only edits.
+COPY package.json package-lock.json ./
 
-RUN npm install
+# Install only runtime dependencies so the image stays small and rebuilds stay quick.
+RUN npm ci --omit=dev
 
+# Copy the application source after dependencies are cached.
 COPY . .
 
 EXPOSE 3000
 
-CMD ["npm","run","dev"]
+# Keep the pod lean. Use `npm run dev` only in a host-side Codespaces shell when hot reload is worth the extra overhead.
+CMD ["npm", "start"]

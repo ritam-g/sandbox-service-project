@@ -1,51 +1,69 @@
+# PURPOSE: Development-only Deployment for the AI service in Kind.
+# WHY THIS EXISTS: Provide a small, debuggable pod that works well in low-resource Codespaces environments.
+# DEVELOPMENT BENEFIT: Fast startup, small memory footprint, and predictable local iteration.
+# PRODUCTION NOTE: Production should add stronger security, scaling, and rollout controls.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name:  ai-deployment
+  name: ai-deployment
   labels:
-    name:  ai-deployment
+    app.kubernetes.io/name: ai
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/part-of: sandbox-service
 spec:
   replicas: 1
+  revisionHistoryLimit: 1
   selector:
     matchLabels:
-      name:  ai-server
+      app.kubernetes.io/name: ai
+      app.kubernetes.io/component: agent
   template:
     metadata:
       labels:
-        name:  ai-server
+        app.kubernetes.io/name: ai
+        app.kubernetes.io/component: agent
+        app.kubernetes.io/part-of: sandbox-service
     spec:
+      terminationGracePeriodSeconds: 10
       containers:
-      - image:  ai-server:latest
-        name:  ai-deployment
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "100Mi"
-          limits:
-            cpu: "100m"
-            memory: "100Mi"
-        livenessProbe:
-          httpGet:
-            path: /api/ai/healthz
-            port: 3000
-          initialDelaySeconds: 90
-          timeoutSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /api/ai/healthz
-            port: 3000
-          initialDelaySeconds: 30
-          timeoutSeconds: 10
-        env:
-        - name:  ENVVARNAME
-          value:  ENVVARVALUE       
-        ports:
-        - containerPort:  3000
-          name:  ai-server-p
-        volumeMounts:
-        - mountPath: /data
-          name: data
-      volumes:
-        - name: data
-          emptyDir: {}
-      imagePullPolicy: Never
+        - name: ai
+          image: ai-server:latest
+          imagePullPolicy: Never
+          # Kind loads images from the local Docker daemon, so Never avoids unnecessary registry pulls.
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+          resources:
+            requests:
+              # Requests keep scheduling realistic without overcommitting scarce Codespaces RAM.
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              # Limits are deliberately low to stay friendly to local laptops and Codespaces.
+              cpu: 250m
+              memory: 256Mi
+          startupProbe:
+            httpGet:
+              path: /api/ai/healthz
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /api/ai/healthz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/ai/healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
