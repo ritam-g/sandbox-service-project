@@ -177,3 +177,6 @@ Without this:
 * `/start` will fail
 * preview URLs will fail
 * Codespaces browser preview will fail
+
+sandbox agent port forward
+kubectl port-forward svc/agent-service-019e4065-083a-7056-87cb-ed94d52c0093 4000:3000
