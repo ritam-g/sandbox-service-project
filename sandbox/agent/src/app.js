@@ -64,12 +64,80 @@ function toWorkspacePath(absolutePath) {
  * @returns {Error} Error with statusCode set
  */
 function markMissingPath(error, message) {
-    if (error?.code === "ENOENT") {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR") {
         error.statusCode = 404;
         error.message = message;
     }
 
     return error;
+}
+
+/**
+ * @description Normalizes query path input into a flat array.
+ * Supports strings, arrays, repeated params, and comma-separated values.
+ * @param {string|string[]|Object|undefined} queryValue Query input or request query object
+ * @returns {string[]} Normalized path segments
+ */
+function normalizeQueryPaths(queryValue) {
+    const rawValues = [];
+
+    const collect = value => {
+        if (value === undefined || value === null) {
+            return;
+        }
+
+        if (Array.isArray(value)) {
+            rawValues.push(...value);
+            return;
+        }
+
+        rawValues.push(value);
+    };
+
+    if (queryValue && typeof queryValue === "object" && !Array.isArray(queryValue)) {
+        collect(queryValue.path);
+        collect(queryValue["path[]"]);
+    } else {
+        collect(queryValue);
+    }
+
+    return rawValues
+        .flatMap(value => String(value).split(","))
+        .map(segment => segment.trim())
+        .filter(Boolean);
+}
+
+/**
+ * @description Reads metadata for a workspace path without following symlink directories.
+ * @param {string} absolutePath Absolute path inside the workspace
+ * @param {string} [entryName] Display name for the entry
+ * @returns {Promise<Object|null>} Entry metadata with directory flag or null if missing
+ */
+async function readPathMetadata(absolutePath, entryName) {
+    let stats;
+
+    try {
+        stats = await fs.lstat(absolutePath);
+    } catch (error) {
+        if (error?.code === "ENOENT") {
+            return null;
+        }
+
+        throw error;
+    }
+
+    const isDirectory = stats.isDirectory();
+
+    return {
+        node: {
+            name: entryName ?? (toWorkspacePath(absolutePath) === "." ? "." : path.basename(absolutePath)),
+            path: toWorkspacePath(absolutePath),
+            type: isDirectory ? "directory" : "file",
+            size: stats.size,
+            updatedAt: stats.mtime.toISOString()
+        },
+        isDirectory
+    };
 }
 
 /**
@@ -81,25 +149,224 @@ function markMissingPath(error, message) {
  */
 async function describeEntry(parentPath, entry) {
     const absolutePath = path.join(parentPath, entry.name);
-    let stats;
+    const metadata = await readPathMetadata(absolutePath, entry.name);
+
+    return metadata?.node ?? null;
+}
+
+/**
+ * @description Recursively builds a file tree for a workspace path.
+ * Skips paths that disappear during traversal.
+ * @param {string} targetPath Absolute path inside the workspace
+ * @param {Array<Object>} [errors=[]] Accumulates skipped path errors
+ * @returns {Promise<Object|null>} File tree node or null if missing
+ */
+async function buildFileTree(targetPath, errors = []) {
+    const metadata = await readPathMetadata(targetPath);
+
+    if (!metadata) {
+        errors.push({
+            path: toWorkspacePath(targetPath),
+            error: "Path not found",
+            statusCode: 404
+        });
+
+        return null;
+    }
+
+    if (!metadata.isDirectory) {
+        return metadata.node;
+    }
+
+    let entries;
 
     try {
-        stats = await fs.stat(absolutePath);
+        entries = await fs.readdir(targetPath, { withFileTypes: true });
     } catch (error) {
-        if (error?.code === "ENOENT") {
+        if (error?.code === "ENOENT" || error?.code === "ENOTDIR") {
+            errors.push({
+                path: toWorkspacePath(targetPath),
+                error: "Directory not found",
+                statusCode: 404
+            });
+
             return null;
         }
 
         throw error;
     }
 
+    const children = [];
+
+    for (const entry of entries) {
+        const childPath = path.join(targetPath, entry.name);
+
+        try {
+            const childNode = await buildFileTree(childPath, errors);
+
+            if (childNode) {
+                children.push(childNode);
+            }
+        } catch (error) {
+            errors.push({
+                path: toWorkspacePath(childPath),
+                error: error.message,
+                statusCode: error.statusCode || 500
+            });
+        }
+    }
+
     return {
-        name: entry.name,
-        path: toWorkspacePath(absolutePath),
-        type: entry.isDirectory() ? "directory" : "file",
-        size: stats.size,
-        updatedAt: stats.mtime.toISOString()
+        ...metadata.node,
+        children
     };
+}
+
+/**
+ * @description Reads a workspace file and returns file content.
+ * @param {string} targetPath Absolute path inside the workspace
+ * @returns {Promise<Object>} File result payload
+ * @throws {Error} If the path is missing or not a file
+ */
+async function readWorkspaceFile(targetPath) {
+    const metadata = await readPathMetadata(targetPath);
+
+    if (!metadata) {
+        const error = new Error("File not found");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    if (metadata.isDirectory) {
+        const error = new Error("Path must be a file");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    let content;
+
+    try {
+        content = await fs.readFile(targetPath, "utf8");
+    } catch (error) {
+        throw markMissingPath(error, "File not found");
+    }
+
+    return {
+        path: metadata.node.path,
+        content
+    };
+}
+
+/**
+ * @description Recursively lists every top-level entry in the workspace.
+ * @param {Array<Object>} [errors=[]] Accumulates skipped path errors
+ * @returns {Promise<Array<Object>>} Nested file tree for the workspace root
+ */
+async function listWorkspaceFiles(errors = []) {
+    let entries;
+
+    try {
+        entries = await fs.readdir(WORKSPACE_ROOT, { withFileTypes: true });
+    } catch (error) {
+        throw markMissingPath(error, "Directory not found");
+    }
+
+    const files = [];
+    const results = await Promise.all(entries.map(async entry => {
+        const absolutePath = path.join(WORKSPACE_ROOT, entry.name);
+
+        try {
+            return await buildFileTree(absolutePath, errors);
+        } catch (error) {
+            errors.push({
+                path: toWorkspacePath(absolutePath),
+                error: error.message,
+                statusCode: error.statusCode || 500
+            });
+
+            return null;
+        }
+    }));
+
+    for (const file of results) {
+        if (file) {
+            files.push(file);
+        }
+    }
+
+    return files;
+}
+
+/**
+ * @description Resolves one or more workspace paths into structured results.
+ * @param {string|string[]|Object|undefined} requestedQuery Query input from request
+ * @param {(absolutePath: string, errors: Array<Object>) => Promise<Object|null>} loadEntry Path loader
+ * @param {Object} [options] Collector options
+ * @param {boolean} [options.defaultToRoot=false] Uses the workspace root listing when no path is provided
+ * @param {(errors: Array<Object>) => Promise<Array<Object>>} [options.rootLoader] Loader for empty queries
+ * @param {string} [options.missingPathMessage="Missing path query parameter"] Error message for empty read queries
+ * @returns {Promise<{results: Array<Object>, errors: Array<Object>}>} Structured query response
+ */
+async function collectWorkspacePaths(requestedQuery, loadEntry, options = {}) {
+    const {
+        defaultToRoot = false,
+        rootLoader = null,
+        missingPathMessage = "Missing path query parameter"
+    } = options;
+    const requestedPaths = normalizeQueryPaths(requestedQuery);
+    const errors = [];
+    const results = [];
+    const seenPaths = new Set();
+
+    if (requestedPaths.length === 0) {
+        if (defaultToRoot && rootLoader) {
+            return {
+                results: await rootLoader(errors),
+                errors
+            };
+        }
+
+        return {
+            results,
+            errors: [{
+                path: ".",
+                error: missingPathMessage,
+                statusCode: 400
+            }]
+        };
+    }
+
+    for (const requestedPath of requestedPaths) {
+        try {
+            const absolutePath = resolveWorkspacePath(requestedPath);
+            const entry = await loadEntry(absolutePath, errors);
+
+            if (entry && !seenPaths.has(entry.path)) {
+                seenPaths.add(entry.path);
+                results.push(entry);
+            }
+        } catch (error) {
+            errors.push({
+                path: requestedPath,
+                error: error.message,
+                statusCode: error.statusCode || 500
+            });
+        }
+    }
+
+    return {
+        results,
+        errors
+    };
+}
+
+/**
+ * @description Returns the recursive workspace tree response.
+ * @param {string|string[]|Object|undefined} requestedQuery Query input from request
+ * @returns {Promise<Object>} Files array and skipped errors
+ */
+async function listWorkspaceTree(requestedQuery) {
+    return listFiles(requestedQuery);
 }
 
 /**
@@ -117,29 +384,67 @@ function handleError(error, res) {
 }
 
 /**
- * @description Lists files and directories in given path.
- * Includes metadata: name, path, type, size, modified time.
- * @param {string} requestedPath Directory path (can be relative)
- * @returns {Promise<Object>} Object with path and files array
- * @throws {Error} If directory not found
+ * @description Lists one or more workspace paths.
+ * Supports comma-separated files and recursive directory trees.
+ * @param {Object} requestedQuery Workspace query object
+ * @returns {Promise<Object>} Object with files and skipped path errors
  */
-async function listFiles(requestedPath) {
-    const directoryPath = resolveWorkspacePath(requestedPath);
-
-    let entries;
-
-    try {
-        entries = await fs.readdir(directoryPath, { withFileTypes: true });
-    } catch (error) {
-        throw markMissingPath(error, "Directory not found");
-    }
-
-    const files = await Promise.all(entries.map(entry => describeEntry(directoryPath, entry)));
+async function listFiles(requestedQuery) {
+    const { results, errors } = await collectWorkspacePaths(
+        requestedQuery,
+        async (absolutePath, workspaceErrors) => buildFileTree(absolutePath, workspaceErrors),
+        {
+            defaultToRoot: true,
+            rootLoader: async workspaceErrors => listWorkspaceFiles(workspaceErrors)
+        }
+    );
 
     return {
-        path: toWorkspacePath(directoryPath),
-        files: files.filter(Boolean)
+        files: results,
+        errors
     };
+}
+
+/**
+ * @description Reads one or more workspace files.
+ * @param {Object} requestedQuery Workspace query object
+ * @returns {Promise<Object>} Object with results and skipped path errors
+ */
+async function readFiles(requestedQuery) {
+    const { results, errors } = await collectWorkspacePaths(
+        requestedQuery,
+        async (absolutePath) => readWorkspaceFile(absolutePath),
+        {
+            missingPathMessage: "Missing path query parameter"
+        }
+    );
+
+    return {
+        results,
+        errors
+    };
+}
+
+/**
+ * @description Chooses the HTTP status code for a multi-path response.
+ * @param {Array<Object>} items Successful response items
+ * @param {Array<Object>} errors Skipped path errors
+ * @returns {number} HTTP status code
+ */
+function getMultiPathStatusCode(items, errors) {
+    if (items.length > 0 || errors.length === 0) {
+        return 200;
+    }
+
+    if (errors.some(error => error.statusCode === 400)) {
+        return 400;
+    }
+
+    if (errors.some(error => error.statusCode === 404)) {
+        return 404;
+    }
+
+    return errors[0]?.statusCode || 500;
 }
 
 /**
@@ -156,13 +461,15 @@ app.get("/", (req, res) => {
 
 /**
  * @route GET /files
- * @description Lists files and directories at given path.
- * @query {string} path Workspace-relative path (defaults to root)
- * @returns {Object} Directory contents with metadata
+ * @description Lists one or more workspace paths.
+ * @query {string|string[]} path Comma-separated, repeated, or array-style workspace paths (defaults to root)
+ * @returns {Object} Recursive file trees with skipped path errors
  */
 app.get("/files", async (req, res) => {
     try {
-        return res.status(200).json(await listFiles(req.query.path));
+        const result = await listFiles(req.query);
+
+        return res.status(getMultiPathStatusCode(result.files, result.errors)).json(result);
     } catch (error) {
         return handleError(error, res);
     }
@@ -171,28 +478,14 @@ app.get("/files", async (req, res) => {
 /**
  * @route GET /read
  * @description Reads file content as UTF-8 text.
- * @query {string} path Workspace-relative file path
- * @returns {Object} File path and content
+ * @query {string|string[]} path Workspace-relative file path or paths
+ * @returns {Object} File results and skipped path errors
  */
 app.get("/read", async (req, res) => {
     try {
-        if (!req.query.path) {
-            return res.status(400).json({ error: "Missing path query parameter" });
-        }
+        const result = await readFiles(req.query);
 
-        const filePath = resolveWorkspacePath(req.query.path);
-        let content;
-
-        try {
-            content = await fs.readFile(filePath, "utf8");
-        } catch (error) {
-            throw markMissingPath(error, "File not found");
-        }
-
-        return res.status(200).json({
-            path: toWorkspacePath(filePath),
-            content
-        });
+        return res.status(getMultiPathStatusCode(result.results, result.errors)).json(result);
     } catch (error) {
         return handleError(error, res);
     }
@@ -285,14 +578,28 @@ app.post("/create", async (req, res) => {
 /**
  * @route GET /read-files
  * @description Alias for /files endpoint.
- * @query {string} path Workspace-relative path
+ * @query {string|string[]} path Workspace-relative path or paths
  */
 app.get("/read-files", async (req, res) => {
     try {
-        return res.status(200).json(await listFiles(req.query.path));
+        const result = await listFiles(req.query);
+
+        return res.status(getMultiPathStatusCode(result.files, result.errors)).json(result);
     } catch (error) {
         return handleError(error, res);
     }
 });
 
+/**  
+ * @description Recursively returns the workspace tree and supports optional path filters.
+ */
+app.get("/list-files", async (req, res) => {
+    try {
+        const result = await listWorkspaceTree(req.query);
+
+        return res.status(getMultiPathStatusCode(result.files, result.errors)).json(result);
+    } catch (error) {
+        return handleError(error, res);
+    }
+});
 export default app;
