@@ -29,5 +29,10 @@ app.get('/api/ai/healthz', (req, res) => {
         status: 'ok'
     })
 })
+app.get('/api/ai', (req, res) => {
+    return res.status(200).json({
+        status: 'ok'
+    })
+})
 
 export default app
