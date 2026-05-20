@@ -260,7 +260,7 @@ Agent service handles:
 # PORT FORWARD AGENT SERVICE
 
 ```bash
-kubectl port-forward svc/agent-service 4000:3000 --address 0.0.0.0
+kubectl port-forward svc/agent-service-019e46f2-2092-7251-ad5b-2d94321d40eb 4000:3000 --address 0.0.0.0
 ```
 
 Open:
