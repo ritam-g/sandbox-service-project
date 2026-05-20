@@ -6,7 +6,7 @@ The filesystem agent is split into four layers that isolate network I/O, tool co
 
 - **Base Request Layer**: `buildUrl()`, `buildPathQuery()`, `normalizeQueryPayload()`, `normalizeMutationPayload()`, and `safeRequest()` convert raw tool input into a stable HTTP request and convert the response back into model-friendly JSON.
 - **Factory Layer**: `createFilesystemTool()`, `createQueryTool()`, and `createMutationTool()` remove repeated LangChain wrapper logic and standardize validation, serialization, and error handling.
-- **Tool Definition Layer**: the exported constants in `agent.tool.js` map concrete filesystem capabilities to LangChain tool names and HTTP routes.
+- **Tool Definition Layer**: the exported constants under `src/tools/filesystem/query/` and `src/tools/filesystem/mutation/` map concrete filesystem capabilities to LangChain tool names and HTTP routes.
 - **AI Agent Layer**: `ChatMistralAI` and `createAgent()` bind the model to the tool registry, while `SYSTEM_PROMPT` defines the behavioral contract the agent should follow.
 
 Runtime flow is deterministic:
@@ -20,15 +20,15 @@ Runtime flow is deterministic:
 
 ## 2. Global Configurations & State
 
-`FILE_SERVICE_BASE_URL` is the root URL used by every filesystem request. It is defined in `agent.tool.js` as `process.env.FILE_SERVICE_BASE_URL || "https://shiny-space-capybara-wrp6pw9gwgj6hg5gr-4000.app.github.dev"`. When the environment variable is present, it overrides the hardcoded development fallback. When it is absent, the code uses the default GitHub Codespaces-style endpoint.
+`FILE_SERVICE_BASE_URL` is the root URL used by every filesystem request. It is defined in `src/tools/filesystem/services/filesystem.service.js` as `process.env.FILE_SERVICE_BASE_URL || "https://shiny-space-capybara-wrp6pw9gwgj6hg5gr-4000.app.github.dev"`. When the environment variable is present, it overrides the hardcoded development fallback. When it is absent, the code uses the default GitHub Codespaces-style endpoint.
 
 This value is consumed by `buildUrl()`, which resolves every route such as `/read`, `/write`, `/files`, and `/create` against the same base origin. That keeps route definitions relative and prevents duplicate URL construction logic across tools.
 
 Environment variables are used in two places:
 
-- `import "dotenv/config"` loads `.env` values before the modules finish evaluating.
+- `import "dotenv/config"` loads `.env` values before the modules finish evaluating in the runtime entrypoint.
 - `FILE_SERVICE_BASE_URL` configures the filesystem service endpoint.
-- `MISTRALAI_API_KEY` configures the `ChatMistralAI` client in `code.agent.js`.
+- `MISTRALAI_API_KEY` configures the `ChatMistralAI` client in `filesystem.model.js`.
 
 There is no shared mutable application state in this layer. Each tool invocation is isolated, and all request-specific data is passed through the tool function parameters.
 
@@ -36,13 +36,13 @@ There is no shared mutable application state in this layer. Each tool invocation
 
 There are two execution paths in the current codebase:
 
-- **Production agent loop**: a user prompt enters `createAgent()`, the model selects a tool, and the chosen tool executes through the factory and request pipeline.
-- **Local test path**: `readFileTesting()` is called immediately at the bottom of `code.agent.js`, so `readWorkspaceFiles.invoke({ path: "src/App.jsx" })` runs as soon as the module loads.
+- **Production agent loop**: a user prompt enters `createFilesystemAgent()`, the model selects a tool, and the chosen tool executes through the factory and request pipeline.
+- **Compatibility path**: `code.agent.js` now re-exports the modular agent stack, so legacy imports still work without owning the implementation.
 
 The production call chain for a filesystem request is:
 
 1. `ChatMistralAI` receives the conversation state.
-2. `createAgent()` attaches the model to the filesystem tool registry.
+2. `createFilesystemAgent()` attaches the model to the filesystem tool registry.
 3. LangChain selects one exported tool, such as `readWorkspaceFiles` or `writeWorkspaceFile`.
 4. `createFilesystemTool()` validates the raw input with Zod.
 5. `createQueryTool()` or `createMutationTool()` normalizes the request shape.
@@ -184,9 +184,9 @@ Alias exports reuse the same underlying tool instance. They do not create new ro
 
 ## 7. The AI Orchestration Layer
 
-`ChatMistralAI` is the model client that interprets the prompt, chooses when to call a tool, and reasons over the returned tool output. In `code.agent.js`, it is configured with `model: "mistral-large-latest"`, `apiKey: process.env.MISTRALAI_API_KEY`, and `temperature: 0.7`.
+`ChatMistralAI` is the model client that interprets the prompt, chooses when to call a tool, and reasons over the returned tool output. In `filesystem.model.js`, it is configured with `model: "mistral-large-latest"`, `apiKey: process.env.MISTRALAI_API_KEY`, and `temperature: 0.7`.
 
-`createAgent()` binds that model to the tool registry. This is what turns the model from a plain chat client into an agent that can inspect files, list directories, create files, and write updates. The tool set passed to `createAgent()` is the complete filesystem capability surface available to the model.
+`createFilesystemAgent()` binds that model to the tool registry. This is what turns the model from a plain chat client into an agent that can inspect files, list directories, create files, and write updates. The tool set passed to `createFilesystemAgent()` is the complete filesystem capability surface available to the model.
 
 `SYSTEM_PROMPT` is the operational playbook for the agent. Its most important instruction is the read-before-write rule: the agent must inspect existing files, understand structure and imports, and only then modify code. That constraint reduces hallucinated file paths, avoids style drift, and helps the model preserve existing architecture instead of overwriting it blindly.
 
@@ -198,6 +198,4 @@ The prompt also tells the agent to:
 - keep output production-ready,
 - and explain what it read and changed.
 
-Important implementation detail: `SYSTEM_PROMPT` is exported, but it is not automatically injected into the `createAgent()` call in the current source. It becomes active only when the caller includes it as a system message. The commented `testing()` example shows the intended usage pattern.
-
-Also note the current module side effect at the bottom of `code.agent.js`: `readFileTesting()` runs immediately and invokes `readWorkspaceFiles` for `src/App.jsx`. That is a local test harness, not the main agent loop. The commented block below it demonstrates the intended orchestration flow where the system prompt and user request drive the full agent loop.
+Important implementation detail: `SYSTEM_PROMPT` is exported, but it is not automatically injected into the `createAgent()` call in the current source. It becomes active only when the caller includes it as a system message.
