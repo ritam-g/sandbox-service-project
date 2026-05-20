@@ -20,11 +20,11 @@ spec:
         imagePullPolicy: Never
         resources:
           requests:
-            cpu: "250m"
-            memory: "250Mi"
+            cpu: "25m"
+            memory: "32Mi"
           limits:
-            cpu: "500m"
-            memory: "500Mi"
+            cpu: "100m"
+            memory: "128Mi"
         livenessProbe:
           httpGet:
             path: /api/status/healthz

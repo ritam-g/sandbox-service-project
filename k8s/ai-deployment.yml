@@ -39,12 +39,12 @@ spec:
           resources:
             requests:
               # Requests keep scheduling realistic without overcommitting scarce Codespaces RAM.
-              cpu: 50m
-              memory: 96Mi
+              cpu: 25m
+              memory: 32Mi
             limits:
               # Limits are deliberately low to stay friendly to local laptops and Codespaces.
-              cpu: 250m
-              memory: 256Mi
+              cpu: 100m
+              memory: 128Mi
           startupProbe:
             httpGet:
               path: /api/ai/healthz

@@ -32,12 +32,12 @@ spec:
 
           resources:
             limits:
-              cpu: "500m"
-              memory: "400Mi"
+              cpu: "100m"
+              memory: "128Mi"
 
             requests:
-              cpu: "250m"
-              memory: "200Mi"
+              cpu: "25m"
+              memory: "32Mi"
 
           livenessProbe:
             httpGet:
