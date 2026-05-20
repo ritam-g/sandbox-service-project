@@ -248,6 +248,12 @@ async function readWorkspaceFile(targetPath) {
     try {
         content = await fs.readFile(targetPath, "utf8");
     } catch (error) {
+        if (error?.code === "EISDIR") {
+            const pathError = new Error("Path must be a file");
+            pathError.statusCode = 400;
+            throw pathError;
+        }
+
         throw markMissingPath(error, "File not found");
     }
 
