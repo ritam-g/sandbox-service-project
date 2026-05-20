@@ -179,4 +179,4 @@ Without this:
 * Codespaces browser preview will fail
 
 sandbox agent port forward
-kubectl port-forward svc/agent-service-019e4065-083a-7056-87cb-ed94d52c0093 4000:3000
+kubectl port-forward svc/agent-service-019e4543-6575-7178-beb6-70bdcdf60d14 4000:3000
