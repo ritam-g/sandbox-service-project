@@ -14,5 +14,18 @@ export default defineConfig({
       usePolling: true,
       interval: 100
     }
+  },
+  watch:{
+    usePolling: true,
+    interval: 300,
+    ignored: [
+      "**/node_modules/**",
+      "**/.git/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/sandbox/server/**",
+      "**/sandbox/router/**",
+      "**/ai/**"
+    ]
   }
 });
