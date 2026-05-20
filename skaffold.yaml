@@ -7,26 +7,41 @@ build:
       context: ai
       docker:
         dockerfile: dockerfile
+      sync:
+        infer:
+          - "**/*.js"
 
     - image: agent
       context: sandbox/agent
       docker:
         dockerfile: dockerfile
+      sync:
+        infer:
+          - "**/*.js"
 
     - image: template
       context: sandbox/template
       docker:
         dockerfile: dockerfile
+      sync:
+        infer:
+          - "**/*.jsx"
 
     - image: router
       context: sandbox/router
       docker:
         dockerfile: dockerfile
+      sync:
+        infer:
+          - "**/*.js"
 
     - image: sandbox
       context: sandbox/server
       docker:
         dockerfile: dockerfile
+      sync:
+        infer:
+          - "**/*.js"
 
 manifests:
   rawYaml:

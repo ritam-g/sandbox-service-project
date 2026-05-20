@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 3000
 
 # Keep the pod lean. Use `npm run dev` only in a host-side Codespaces shell when hot reload is worth the extra overhead.
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]

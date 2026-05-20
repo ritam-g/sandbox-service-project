@@ -3,7 +3,7 @@ import express from 'express'
 
 const app = express()
 
-
+// this is middleware for parsing json bodies, with a size limit to prevent abuse
 app.use(express.json(
     {
         limit: '10mb'
