@@ -25,7 +25,7 @@ async function testing() {
         messages: [
             {
                 "role": "user",
-                "content": "update the file src/App.jsx with new code of calculator funciton that adds two numbers"
+                "content": "create a noraml landing page for bike write code in jsx file onely  and remove .html code write prperly way like in ract we do  "
             }
         ]
     })

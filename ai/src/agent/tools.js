@@ -71,14 +71,14 @@ export const readFiles = tool(
 export const updateFiles = tool(
     async function ({ 
         updates = [
-        {
-            "file": "src/App.jsx",
-            "content": "new app code"
-        },
-        {
-            "file": "src/main.jsx",
-            "content": "new main code"
-        }
+        // {
+        //     "file": "src/App.jsx",
+        //     "content": "new app code"
+        // },
+        // {
+        //     "file": "src/main.jsx",
+        //     "content": "console.log('hello bro')"
+        // }
     ] }) {
         console.log('====================================');
         console.log('udateFiles');
