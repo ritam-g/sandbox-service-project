@@ -1,6 +1,6 @@
 import morgan from 'morgan'
 import express from 'express'
-
+import agentRouter from './routes/agent.routes.js'
 const app = express()
 
 // this is middleware for parsing json bodies, with a size limit to prevent abuse
@@ -35,4 +35,6 @@ app.get('/api/ai', (req, res) => {
     })
 })
 
+
+app.use('/api/ai/agent',agentRouter)
 export default app

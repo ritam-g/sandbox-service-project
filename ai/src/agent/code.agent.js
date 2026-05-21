@@ -20,18 +20,6 @@ const agent = createAgent({
     ]
 })
 
-async function testing() {
-    const result = await agent.invoke({
-        messages: [
-            {
-                "role": "user",
-                "content": "create a noraml landing page for bike write code in jsx file onely  and remove .html code write prperly way like in ract we do  "
-            }
-        ]
-    })
-    console.log(result)
-}
 
-testing()
 
 export default agent
