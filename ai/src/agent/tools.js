@@ -14,7 +14,7 @@ export const listFiles = tool(
         console.log('====================================');
         console.log('listFiles');
         console.log('====================================');
-        const response = await axios.get("https://shiny-space-capybara-wrp6pw9gwgj6hg5gr-4000.app.github.dev/list-files")
+        const response = await axios.get("https://ominous-space-fiesta-jjv6vx4qxrw9c4x5-4000.app.github.dev/list-files")
         console.log('====================================');
         console.log(response.data);
         console.log('====================================');
@@ -42,7 +42,7 @@ export const readFiles = tool(
         console.log('readFiles');
         console.log('====================================');
         
-        const response = await axios.get(`https://shiny-space-capybara-wrp6pw9gwgj6hg5gr-4000.app.github.dev/read-files?files=${files.join(",")}`)
+        const response = await axios.get(`https://ominous-space-fiesta-jjv6vx4qxrw9c4x5-4000.app.github.dev/read-files?files=${files.join(",")}`)
         console.log('====================================');
         console.log(response.data);
        
@@ -84,7 +84,7 @@ export const updateFiles = tool(
         console.log('udateFiles');
         console.log('====================================');
         
-        const response = await axios.patch(`https://shiny-space-capybara-wrp6pw9gwgj6hg5gr-4000.app.github.dev/update-files`,{
+        const response = await axios.patch(`https://ominous-space-fiesta-jjv6vx4qxrw9c4x5-4000.app.github.dev/update-files`,{
             updates
         })
         console.log('====================================');
