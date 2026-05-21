@@ -185,7 +185,7 @@ Forward your dynamic sandbox instance frontend (Vite app on port `5173` mapped t
 
 ```bash
 # REPLACE with your real previewService string
-kubectl port-forward svc/sandbox-service-019e4ac3-0c9a-71a8-9b5a-59ec31dcfdb0 5173:80 --address 0.0.0.0
+kubectl port-forward svc/sandbox-service-019e4bcf-d4d5-757d-a689-24f9a1d1edfa 5173:80 --address 0.0.0.0
 
 ```
 
@@ -204,7 +204,7 @@ Forward the filesystem manager backend container for terminal websockets and fil
 
 ```bash
 # REPLACE with your real agentService string
-kubectl port-forward svc/agent-service-019e4ac3-0c9a-71a8-9b5a-59ec31dcfdb0 4000:3000 --address 0.0.0.0
+kubectl port-forward svc/agent-service-019e4bcf-d4d5-757d-a689-24f9a1d1edfa 4000:3000 --address 0.0.0.0
 
 ```
 

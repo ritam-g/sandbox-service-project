@@ -38,7 +38,7 @@ spec:
               value: "3000"
             # Explicit environment variable addition for LangChain/Mistral integration
             - name: MISTRAL_API_KEY
-              value: "YOUR_MISTRAL_API_KEY_HERE" # 👈 Replace with your actual Mistral API key or use Kubernetes Secrets for better security in production.
+              value: "dvTY6f1p4CKiVwsFei6sKaosa37ylRzc" # 👈 Replace with your actual Mistral API key or use Kubernetes Secrets for better security in production.
           resources:
             requests:
               # Requests keep scheduling realistic without overcommitting scarce Codespaces RAM.
