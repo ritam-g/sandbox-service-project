@@ -1,7 +1,10 @@
 apiVersion: skaffold/v4beta3
 kind: Config
-
+metadata:
+  name: sandbox-service
 build:
+  local:
+    push: false # 👈 Explicitly forces Skaffold to NEVER try pushing to Docker Hub
   artifacts:
     - image: ai-server
       context: ai
@@ -26,6 +29,8 @@ build:
       sync:
         infer:
           - "**/*.jsx"
+          - "**/*.ts"
+          - "**/*.tsx"
 
     - image: router
       context: sandbox/router
@@ -45,11 +50,4 @@ build:
 
 manifests:
   rawYaml:
-    - k8s/ai-deployment.yml
-    - k8s/ai-service.yml
-    - k8s/ingress.yml
-    - k8s/rbac.yml
-    - k8s/router-deployment.yml
-    - k8s/router-service.yml
-    - k8s/sandbox-deployment.yml
-    - k8s/sandbox-service.yml
+    - k8s/*.yml # 👈 Uses a wild card so it automatically picks up all manifests cleanly without breaking

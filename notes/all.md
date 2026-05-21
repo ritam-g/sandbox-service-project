@@ -1,8 +1,13 @@
-````md
-# GITHUB CODESPACES SANDBOX STARTUP GUIDE
+Here is your updated `all.md` startup guide. It now outlines the exact manual step-by-step workflow you just used to get everything running perfectly—completely bypassing Skaffold for now.
 
-Production-style startup guide for:
+It covers building/loading the images, spinning up the core services, hitting the creation API, and handling all three crucial port-forwards (Router, React UI, and the dynamic Workspace Agent).
 
+---
+
+```md
+# GITHUB CODESPACES SANDBOX STARTUP GUIDE (MANUAL WORKFLOW)
+
+Production-style manual startup guide for:
 - sandbox-service
 - router-service
 - template-service
@@ -10,13 +15,12 @@ Production-style startup guide for:
 - ai-service
 
 Architecture:
-
 Browser
 ↓
 Router Service
 ↓
 Sandbox Pod
-├── Template Container (Vite App)
+├── Template Container (Vite App/React UI)
 ├── Agent Container (Filesystem + Terminal API)
 └── Shared /workspace Volume
 ↓
@@ -26,12 +30,12 @@ AI Service (LangChain + Mistral)
 
 # BEFORE CLOSING GITHUB CODESPACE
 
-Cleanup all temporary sandbox pods/services:
-
+Cleanup all temporary dynamic sandbox pods/services:
 ```bash
 kubectl delete pod -l app=sandbox-instance --ignore-not-found && \
 kubectl delete svc -l app=sandbox-instance --ignore-not-found
-````
+
+```
 
 ---
 
@@ -43,12 +47,14 @@ kubectl delete svc -l app=sandbox-instance --ignore-not-found
 
 ```bash
 sudo service docker start
+
 ```
 
-Check:
+Check status:
 
 ```bash
 docker ps
+
 ```
 
 ---
@@ -59,41 +65,28 @@ Create cluster:
 
 ```bash
 kind create cluster --name sandbox
+
 ```
 
 If cluster already exists:
 
 ```bash
 kind get clusters
+
 ```
 
 Delete old cluster if broken:
 
 ```bash
 kind delete cluster --name sandbox
+
 ```
 
 ---
 
 # 3. BUILD ALL DOCKER IMAGES
 
-IMPORTANT:
-
-Because you use:
-
-```dockerfile
-CMD ["npm","run","dev"]
-```
-
-and:
-
-```yaml
-imagePullPolicy: Never
-```
-
-You MUST rebuild images after code changes.
-
-Build all services:
+Because we use `imagePullPolicy: Never` for local development, you MUST rebuild these images whenever you make code updates.
 
 ```bash
 docker build -t sandbox:latest ./sandbox/server && \
@@ -101,11 +94,14 @@ docker build -t router:latest ./sandbox/router && \
 docker build -t template:latest ./sandbox/template && \
 docker build -t agent:latest ./sandbox/agent && \
 docker build -t ai-server:latest ./ai
+
 ```
 
 ---
 
 # 4. LOAD IMAGES INTO KIND
+
+This pushes the locally built docker layers straight into your Kind cluster's memory control plane.
 
 ```bash
 kind load docker-image sandbox:latest --name sandbox && \
@@ -113,189 +109,134 @@ kind load docker-image router:latest --name sandbox && \
 kind load docker-image template:latest --name sandbox && \
 kind load docker-image agent:latest --name sandbox && \
 kind load docker-image ai-server:latest --name sandbox
+
 ```
 
 ---
 
 # 5. APPLY KUBERNETES FILES
 
-Apply all manifests:
-
-```bash
-kubectl apply -f kubernetes/
-```
-
-OR:
+Apply your static deployment manifests:
 
 ```bash
 kubectl apply -f k8s/
+
 ```
 
 ---
 
-# 6. CHECK DEPLOYMENTS
+# 6. CHECK ALL DEPLOYMENTS & PODS
 
 ```bash
 kubectl get deploy
+
 ```
 
-Expected:
-
-```txt
-sandbox-deployment
-router-deployment
-agent-deployment
-ai-deployment
-```
-
----
-
-# 7. CHECK PODS
+Stream pod status until all report `Running`:
 
 ```bash
 kubectl get pods -w
-```
 
-Wait until all are:
-
-```txt
-Running
-```
-
-Example:
-
-```txt
-router-deployment-xxxxx      Running
-sandbox-deployment-xxxxx     Running
-agent-deployment-xxxxx       Running
-ai-deployment-xxxxx          Running
 ```
 
 ---
 
-# 8. CHECK SERVICES
+# 7. PORT FORWARD ROUTER SERVICE (TERMINAL 1)
 
-```bash
-kubectl get svc
-```
-
-Expected:
-
-```txt
-sandbox-service
-router-service
-agent-service
-ai-service
-```
-
----
-
-# 9. PORT FORWARD ROUTER SERVICE
-
-IMPORTANT:
-
-KEEP THIS TERMINAL OPEN.
+Keep this terminal open. Without it, `/start` and your main proxy mapping fail.
 
 ```bash
 kubectl port-forward svc/router-service 3000:80 --address 0.0.0.0
+
 ```
-
-Without this:
-
-* /start fails
-* preview URLs fail
-* Codespaces browser preview fails
 
 ---
 
-# NEW TERMINAL
+# 8. CREATE DYNAMIC SANDBOX INSTANCE (TERMINAL 2)
 
-# 10. CREATE SANDBOX
+Fire a request to spin up your containerized React runtime workspace:
 
 ```bash
 curl -X POST http://localhost:3000/api/sandbox/start
+
 ```
 
-Example response:
+**Example JSON Response:**
 
 ```json
 {
-  "sandboxId": "abc123",
-  "previewUrl": "/preview/abc123/"
+    "message": "Sandbox started",
+    "sandboxId": "019e4ac3-0c9a-71a8-9b5a-59ec31dcfdb0",
+    "podName": "sandbox-pod-019e4ac3-0c9a-71a8-9b5a-59ec31dcfdb0",
+    "previewService": "sandbox-service-019e4ac3-0c9a-71a8-9b5a-59ec31dcfdb0",
+    "agentService": "agent-service-019e4ac3-0c9a-71a8-9b5a-59ec31dcfdb0",
+    "previewUrl": "/preview/019e4ac3-0c9a-71a8-9b5a-59ec31dcfdb0/"
 }
+
 ```
 
-Copy:
-
-* sandboxId
-* previewUrl
+*Copy your exact `previewService` and `agentService` strings from your actual response output for the next steps.*
 
 ---
 
-# 11. OPEN PREVIEW
+# 9. PORT FORWARD THE REACT FRONTEND PREVIEW UI (TERMINAL 3)
 
-```txt
-https://YOUR_CODESPACE-3000.app.github.dev/preview/SANDBOX_ID/
-```
-
-Example:
-
-```txt
-https://solid-space-x7g6p9rj5-3000.app.github.dev/preview/abc123/
-```
-
----
-
-# AGENT SERVICE
-
-Agent service handles:
-
-* filesystem API
-* terminal websocket
-* file read/write/create
-* workspace operations
-
----
-
-# PORT FORWARD AGENT SERVICE
+Forward your dynamic sandbox instance frontend (Vite app on port `5173` mapped through service port `80`):
 
 ```bash
-kubectl port-forward svc/agent-service-019e46f2-2092-7251-ad5b-2d94321d40eb 4000:3000 --address 0.0.0.0
+# REPLACE with your real previewService string
+kubectl port-forward svc/sandbox-service-019e4ac3-0c9a-71a8-9b5a-59ec31dcfdb0 5173:80 --address 0.0.0.0
+
 ```
 
-Open:
+Open the application inside your browser using the Codespace domain layout:
 
 ```txt
-http://localhost:4000
-```
+https://YOUR_CODESPACE_NAME-5173.app.github.dev/
 
-Codespaces:
-
-```txt
-https://YOUR_CODESPACE-4000.app.github.dev
 ```
 
 ---
 
-# AGENT ROUTES
+# 10. PORT FORWARD THE WORKSPACE AGENT API (TERMINAL 4)
+
+Forward the filesystem manager backend container for terminal websockets and file reading/writing:
+
+```bash
+# REPLACE with your real agentService string
+kubectl port-forward svc/agent-service-019e4ac3-0c9a-71a8-9b5a-59ec31dcfdb0 4000:3000 --address 0.0.0.0
+
+```
+
+Open/Verify in Codespaces:
+
+```txt
+https://YOUR_CODESPACE_NAME-4000.app.github.dev/
+
+```
 
 ---
 
-# HEALTH ROUTE
+# AGENT ROUTES VERIFICATION
 
-## GET /
+## GET / (Health Check)
 
 ```bash
 curl http://localhost:4000/
+
 ```
 
-Response:
+Expected Response:
 
 ```json
 {
   "message": "Hello from sandbox agent!",
   "status": "success"
 }
+
 ```
 
----
+```
+***
+
+```

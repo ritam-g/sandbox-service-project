@@ -283,7 +283,7 @@ VERY IMPORTANT.
 This is needed if preview route is not working.
 
 ```bash
-kubectl port-forward svc/sandbox-service-019e46f2 5173:5173
+kubectl port-forward svc/sandbox-service-019e4ac3-0c9a-71a8-9b5a-59ec31dcfdb0 5173:5173
 ```
 
 Now open:
