@@ -13,12 +13,12 @@ import * as z from 'zod'
  */
 export const listFiles = tool(
     async function ({ path = [] }, config) {
-        const sandboxURL =
-            `http://sandbox-service-${config.context.sandboxID}:3000`;
+        const agentUrl =
+            `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
         console.log('====================================');
         console.log('listFiles');
         console.log('====================================');
-        const response = await axios.get(`${sandboxURL}/list-files`)
+        const response = await axios.get(`${agentUrl}/list-files`)
         console.log('====================================');
         console.log(response.data);
         console.log('====================================');
@@ -42,13 +42,13 @@ export const listFiles = tool(
  */
 export const readFiles = tool(
     async function ({ files = ["src/App.jsx", "vite.config.js"] }, config) {
-        const sandboxURL =
-            `http://sandbox-service-${config.context.sandboxID}:3000`;
+        const agentUrl =
+            `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
         console.log('====================================');
         console.log('readFiles');
         console.log('====================================');
 
-        const response = await axios.get(`${sandboxURL}/read-files?files=${files.join(",")}`)
+        const response = await axios.get(`${agentUrl}/read-files?files=${files.join(",")}`)
         console.log('====================================');
         console.log(response.data);
 
@@ -88,13 +88,13 @@ export const updateFiles = tool(
         ]
 
     }, config) {
-        const sandboxURL =
-            `http://sandbox-service-${config.context.sandboxID}:3000`;
+        const agentUrl =
+            `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
         console.log('====================================');
         console.log('udateFiles');
         console.log('====================================');
 
-        const response = await axios.patch(`${sandboxURL}/update-files`, {
+        const response = await axios.patch(`${agentUrl}/update-files`, {
             updates
         })
         console.log('====================================');
@@ -125,13 +125,13 @@ export const updateFiles = tool(
  */
 export const deleteFiles = tool(
     async function ({ files = ["src/App.jsx", "src/main.jsx"] }, config) {
-        const sandboxURL =
-            `http://sandbox-service-${config.context.sandboxID}:3000`;
+        const agentUrl =
+            `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
         console.log('====================================');
         console.log('deleteFiles');
         console.log('====================================');
 
-        const response = await axios.delete(`${sandboxURL}/delete-files?files=${files.join(",")}`)
+        const response = await axios.delete(`${agentUrl}/delete-files?files=${files.join(",")}`)
         console.log('====================================');
         console.log(response.data);
         console.log('====================================');
