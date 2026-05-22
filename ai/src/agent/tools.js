@@ -13,15 +13,17 @@ import * as z from 'zod'
  */
 export const listFiles = tool(
     async function ({ path = [] }, config) {
+        const writer=config?.writer
         const agentUrl =
             `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
-        console.log('====================================');
-        console.log('listFiles');
-        console.log('====================================');
+
+        writer(`Listing files in path: ${path.join(", ") || "root"}`)
+
         const response = await axios.get(`${agentUrl}/list-files`)
-        console.log('====================================');
-        console.log(response.data);
-        console.log('====================================');
+
+
+        writer(`Retrieved file list: ${JSON.stringify(response.data)}`)
+        
         return JSON.stringify(response.data)
     },
     {
@@ -42,15 +44,14 @@ export const listFiles = tool(
  */
 export const readFiles = tool(
     async function ({ files = ["src/App.jsx", "vite.config.js"] }, config) {
+        const writer=config?.writer
         const agentUrl =
             `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
-        console.log('====================================');
-        console.log('readFiles');
-        console.log('====================================');
 
+        writer(`Reading files: ${files.join(", ")}`)
         const response = await axios.get(`${agentUrl}/read-files?files=${files.join(",")}`)
         console.log('====================================');
-        console.log(response.data);
+        console.log(response.data,` read files: ${files.join(", ")}`);
 
 
         console.log('====================================');
@@ -88,17 +89,17 @@ export const updateFiles = tool(
         ]
 
     }, config) {
+        const writer=config?.writer
         const agentUrl =
             `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
-        console.log('====================================');
-        console.log('udateFiles');
-        console.log('====================================');
+
+        writer(`Updating files: ${updates.map(u => u.file).join(", ")}`)
 
         const response = await axios.patch(`${agentUrl}/update-files`, {
             updates
         })
         console.log('====================================');
-        console.log(response.data);
+        console.log(response.data,` updated files: ${updates.map(u => u.file).join(", ")}`);
         console.log('====================================');
 
         return JSON.stringify(response.data)
@@ -125,15 +126,14 @@ export const updateFiles = tool(
  */
 export const deleteFiles = tool(
     async function ({ files = ["src/App.jsx", "src/main.jsx"] }, config) {
+        const writer=config?.writer
         const agentUrl =
             `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
-        console.log('====================================');
-        console.log('deleteFiles');
-        console.log('====================================');
+        writer(`Deleting files: ${files.join(", ")}`)
 
         const response = await axios.delete(`${agentUrl}/delete-files?files=${files.join(",")}`)
         console.log('====================================');
-        console.log(response.data);
+        console.log(response.data,` deleted files: ${files.join(", ")}`);
         console.log('====================================');
 
         return JSON.stringify(response.data)
