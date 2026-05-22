@@ -16,6 +16,8 @@ export const listFiles = tool(
         const writer=config?.writer
         const agentUrl =
             `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
+        console.log('====================================');
+        console.log('listing files in path: ', path);
 
         writer(`Listing files in path: ${path.join(", ") || "root"}`)
 
@@ -47,6 +49,8 @@ export const readFiles = tool(
         const writer=config?.writer
         const agentUrl =
             `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
+        console.log('====================================');
+        console.log('reading files: ', files);
 
         writer(`Reading files: ${files.join(", ")}`)
         const response = await axios.get(`${agentUrl}/read-files?files=${files.join(",")}`)
@@ -88,6 +92,8 @@ export const updateFiles = tool(
         const writer=config?.writer
         const agentUrl =
             `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
+        console.log('====================================');
+        console.log('updating files: ', updates);
 
         writer(`Updating files: ${updates.map(u => u.file).join(", ")}`)
 
@@ -123,6 +129,8 @@ export const deleteFiles = tool(
         const writer=config?.writer
         const agentUrl =
             `https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev`;
+        console.log('====================================');
+        console.log('deleting files: ', files);
         writer(`Deleting files: ${files.join(", ")}`)
 
         const response = await axios.delete(`${agentUrl}/delete-files?files=${files.join(",")}`)
