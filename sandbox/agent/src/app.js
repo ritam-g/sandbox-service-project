@@ -370,4 +370,69 @@ app.post("/create-files", async (req, res) => {
     }
 });
 
+/**  
+ * @route DELETE /delete-files
+ * @description
+ * Deletes files.
+ *
+ * Body:
+ * {
+ *   "files": [
+ *      "src/test.js"
+ *   ]
+ * }
+ */
+app.delete("/delete-files", async (req, res) => {
+
+    const files = req.body.files;
+
+    if (!files || !Array.isArray(files)) {
+
+        return res.status(400).json({
+            status: "error",
+            message: "Invalid files payload"
+        });
+    }
+
+    try {
+
+        const results = await Promise.all(
+            files.map(async file => {
+
+                try {
+
+                    const filePath =
+                        resolveSafePath(file);
+
+                    await fs.promises.unlink(filePath);
+
+                    return {
+                        file,
+                        status: "deleted"
+                    };
+
+                } catch (error) {
+
+                    return {
+                        file,
+                        error: error.message
+                    };
+                }
+            })
+        );
+
+        return res.status(200).json({
+            status: "success",
+            results
+        });
+
+    }
+    catch (error) {
+
+        return res.status(500).json({
+            status: "error",
+            message: error.message
+        });
+    }
+});
 export default app;

@@ -7,7 +7,7 @@ const agentRouter = Router()
 agentRouter.post('/invoke', async (req, res) => {
     try {
         const { message } = req.body
-        const response = await agent.invoke({ messages: message })
+        const response = await agent.invoke({ messages: [{ role: 'user', content: message }] })
         res.status(200).json({
             status: 'success',
             response
