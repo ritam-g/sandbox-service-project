@@ -7,7 +7,7 @@ const agentRouter = Router()
 agentRouter.post('/invoke', async (req, res) => {
     try {
         const { message, sandboxID } = req.body
-        const response = await agent.stream({ messages: [{ role: 'user', content: message }] }, { context: { sandboxID } })
+        const response = await agent.stream({ messages: [{ role: 'user', content: message }] }, { context: { sandboxID }, streamMode: "custom" })
 
         for await (const chunk of response) {
             console.log("====================================");
