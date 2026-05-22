@@ -23,7 +23,7 @@ export const listFiles = tool(
 
 
         writer(`Retrieved file list: ${JSON.stringify(response.data)}`)
-        
+
         return JSON.stringify(response.data)
     },
     {
@@ -50,11 +50,7 @@ export const readFiles = tool(
 
         writer(`Reading files: ${files.join(", ")}`)
         const response = await axios.get(`${agentUrl}/read-files?files=${files.join(",")}`)
-        console.log('====================================');
-        console.log(response.data,` read files: ${files.join(", ")}`);
-
-
-        console.log('====================================');
+        writer(`Retrieved file contents: ${JSON.stringify(response.data)}`)
 
         return JSON.stringify(response.data)
     },
@@ -98,9 +94,7 @@ export const updateFiles = tool(
         const response = await axios.patch(`${agentUrl}/update-files`, {
             updates
         })
-        console.log('====================================');
-        console.log(response.data,` updated files: ${updates.map(u => u.file).join(", ")}`);
-        console.log('====================================');
+        writer(`Updated files: ${JSON.stringify(response.data)}`);
 
         return JSON.stringify(response.data)
     },
@@ -133,7 +127,7 @@ export const deleteFiles = tool(
 
         const response = await axios.delete(`${agentUrl}/delete-files?files=${files.join(",")}`)
         console.log('====================================');
-        console.log(response.data,` deleted files: ${files.join(", ")}`);
+        writer(response.data,` deleted files: ${files.join(", ")}`);
         console.log('====================================');
 
         return JSON.stringify(response.data)
