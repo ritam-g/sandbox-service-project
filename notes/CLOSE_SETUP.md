@@ -31,7 +31,7 @@ Optional check before shutdown.
 IMPORTANT:
 
 ```bash
-kind delete cluster
+kind delete cluster --name sandbox
 ```
 
 This stops:
