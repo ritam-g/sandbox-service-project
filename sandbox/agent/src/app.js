@@ -2,9 +2,19 @@ import express from "express";
 import morgan from "morgan";
 import fs from "fs";
 import path from "path";
+import { Server } from "socket.io"
+import http from "http";
+import pty from "node-pty";
+import os from "os";
 
 const app = express();
-
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST", "PATCH", "DELETE"]
+    }
+});
 const WORKING_DIR = "/workspace";
 
 app.use(morgan("dev"));
@@ -34,6 +44,7 @@ function resolveSafePath(filePath = "") {
     return absolutePath;
 }
 
+
 /**
  * @route GET /
  * @description Health check route.
@@ -45,6 +56,37 @@ app.get("/", (req, res) => {
     });
 });
 
+// Choose the shell (bash for Linux/Docker environments)
+const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
+
+// Spawn the PTY process
+const ptyProcess = pty.spawn(shell, [], {
+    name: 'xterm-color',
+    cols: 80,
+    rows: 30,
+    cwd: WORKING_DIR,
+    env: process.env
+});
+// Handle data coming from the terminal (stdout)
+ptyProcess.onData((data) => {
+    io.emit("terminal-output", data);
+});
+
+// Handle process exit
+ptyProcess.onExit(({ exitCode, signal }) => {
+    console.log(`Process exited with code: ${exitCode}`);
+});
+
+io.on("connection", (socket) => {
+    console.log('a user connected');
+    socket.on("terminal-input", (data) => {
+        ptyProcess.write(data);
+    });
+
+    socket.on("disconnect", () => {
+        console.log('user disconnected');
+    });
+});
 /**
  * @route GET /list-files
  * @description
@@ -435,4 +477,4 @@ app.delete("/delete-files", async (req, res) => {
         });
     }
 });
-export default app;
+export default httpServer;
