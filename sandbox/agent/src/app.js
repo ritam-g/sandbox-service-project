@@ -56,35 +56,69 @@ app.get("/", (req, res) => {
     });
 });
 
-// Choose the shell (bash for Linux/Docker environments)
-const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
-
-// Spawn the PTY process
-const ptyProcess = pty.spawn(shell, [], {
-    name: 'xterm-color',
-    cols: 80,
-    rows: 30,
-    cwd: WORKING_DIR,
-    env: process.env
-});
-// Handle data coming from the terminal (stdout)
-ptyProcess.onData((data) => {
-    io.emit("terminal-output", data);
-});
-
-// Handle process exit
-ptyProcess.onExit(({ exitCode, signal }) => {
-    console.log(`Process exited with code: ${exitCode}`);
-});
+const shell = os.platform() === "win32"
+    ? "powershell.exe"
+    : "bash";
 
 io.on("connection", (socket) => {
-    console.log('a user connected');
-    socket.on("terminal-input", (data) => {
-        ptyProcess.write(data);
+
+    console.log("client connected");
+
+    const ptyProcess = pty.spawn(shell, [], {
+        name: "xterm-color",
+        cols: 80,
+        rows: 30,
+        cwd: WORKING_DIR,
+        env: process.env
     });
 
+    /**
+     * Send terminal output back to frontend
+     */
+    ptyProcess.onData((data) => {
+
+        console.log("OUTPUT:", JSON.stringify(data));
+
+        socket.emit("terminal-output", data);
+    });
+
+    /**
+     * Receive terminal input from frontend
+     */
+    socket.on("terminal-input", (data) => {
+
+        console.log("INPUT:", JSON.stringify(data));
+
+        /**
+         * VERY IMPORTANT
+         * \r executes the command
+         */
+        ptyProcess.write(data + "\r");
+    });
+
+    /**
+     * PTY exit handler
+     */
+    ptyProcess.onExit(({ exitCode }) => {
+
+        console.log(`PTY exited: ${exitCode}`);
+    });
+
+    /**
+     * Socket disconnect cleanup
+     */
     socket.on("disconnect", () => {
-        console.log('user disconnected');
+
+        console.log("client disconnected");
+
+        try {
+
+            ptyProcess.kill();
+
+        } catch (err) {
+
+            console.log(err.message);
+        }
     });
 });
 /**

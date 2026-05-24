@@ -1,7 +1,3 @@
-# PURPOSE: Shared local-development Ingress for sandbox, preview, and AI routes.
-# WHY THIS EXISTS: Route browser traffic to the correct internal service from one entrypoint.
-# DEVELOPMENT BENEFIT: Stable local URLs and easier debugging in Codespaces + Kind.
-# PRODUCTION NOTE: Production should add host-based routing, TLS, and stricter ingress policy.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -9,13 +5,12 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    nginx.ingress.kubernetes.io/websocket-services: sandbox-service
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
-          # Most specific routes first so /api does not shadow /api/ai.
+
           - path: /api/ai
             pathType: Prefix
             backend:
@@ -23,6 +18,7 @@ spec:
                 name: ai-service
                 port:
                   number: 80
+
           - path: /preview
             pathType: Prefix
             backend:
@@ -30,6 +26,7 @@ spec:
                 name: router-service
                 port:
                   number: 80
+
           - path: /api
             pathType: Prefix
             backend:
