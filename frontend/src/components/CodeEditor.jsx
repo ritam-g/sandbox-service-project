@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import { FileCode, Save, RefreshCw, X, AlertCircle } from 'lucide-react';
-
-const AGENT_API = "https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev";
+import { API_CONFIG } from '../config/runtime';
 
 export default function CodeEditor({ 
     openTabs, 
@@ -40,7 +39,9 @@ export default function CodeEditor({
 
         setLoadingFiles(prev => ({ ...prev, [filePath]: true }));
         try {
-            const res = await fetch(`${AGENT_API}/read-files?files=${encodeURIComponent(filePath)}`);
+            const res = await fetch(`${API_CONFIG.AGENT}/read-files?files=${encodeURIComponent(filePath)}`, {
+                mode: 'cors'
+            });
             const data = await res.json();
             if (data.status === "success" && data.results && data.results[0]) {
                 const content = data.results[0].content || "";
@@ -92,8 +93,9 @@ export default function CodeEditor({
 
         setSavingFiles(prev => ({ ...prev, [activeTab]: true }));
         try {
-            const res = await fetch(`${AGENT_API}/update-files`, {
+            const res = await fetch(`${API_CONFIG.AGENT}/update-files`, {
                 method: 'PATCH',
+                mode: 'cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     updates: [{ file: activeTab, content: draft }]

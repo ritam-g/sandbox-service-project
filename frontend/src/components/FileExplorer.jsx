@@ -11,8 +11,7 @@ import {
     ChevronRight,
     RefreshCw
 } from 'lucide-react';
-
-const AGENT_API = "https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev";
+import { API_CONFIG } from '../config/runtime';
 
 export default function FileExplorer({ activeFile, onSelectFile, refreshTrigger }) {
     const [files, setFiles] = useState([]);
@@ -27,7 +26,7 @@ export default function FileExplorer({ activeFile, onSelectFile, refreshTrigger 
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`${AGENT_API}/list-files`);
+            const res = await fetch(`${API_CONFIG.AGENT}/list-files`, { mode: 'cors' });
             const data = await res.json();
             if (data.status === "success") {
                 setFiles(data.files);
@@ -91,8 +90,9 @@ export default function FileExplorer({ activeFile, onSelectFile, refreshTrigger 
 
         try {
             if (type === 'file') {
-                const res = await fetch(`${AGENT_API}/create-files`, {
+                const res = await fetch(`${API_CONFIG.AGENT}/create-files`, {
                     method: 'POST',
+                    mode: 'cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         files: [{ file: fullPath, content: "" }]
@@ -109,8 +109,9 @@ export default function FileExplorer({ activeFile, onSelectFile, refreshTrigger 
                 // Directories are implicitly created in this API upon file creation, 
                 // but let's write a placeholder blank file in the directory to materialize it.
                 const placeholderPath = `${fullPath}/.keep`;
-                const res = await fetch(`${AGENT_API}/create-files`, {
+                const res = await fetch(`${API_CONFIG.AGENT}/create-files`, {
                     method: 'POST',
+                    mode: 'cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         files: [{ file: placeholderPath, content: "" }]
@@ -138,8 +139,9 @@ export default function FileExplorer({ activeFile, onSelectFile, refreshTrigger 
         if (!confirm(`Are you sure you want to delete ${path}?`)) return;
 
         try {
-            const res = await fetch(`${AGENT_API}/delete-files`, {
+            const res = await fetch(`${API_CONFIG.AGENT}/delete-files`, {
                 method: 'DELETE',
+                mode: 'cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     files: [path]

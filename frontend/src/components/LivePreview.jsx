@@ -9,8 +9,7 @@ import {
     ShieldAlert,
     Loader2
 } from 'lucide-react';
-
-const PREVIEW_HOST = "https://supreme-potato-pj4v4xgpxwpvc6p4-5173.app.github.dev";
+import { API_CONFIG } from '../config/runtime';
 
 export default function LivePreview({ activeSandboxId, isSandboxRunning, onStartSandbox }) {
     const [viewMode, setViewMode] = useState("desktop"); // desktop, tablet, mobile
@@ -20,7 +19,7 @@ export default function LivePreview({ activeSandboxId, isSandboxRunning, onStart
 
     const getPreviewUrl = () => {
         if (!activeSandboxId) return "";
-        return `${PREVIEW_HOST}/preview/${activeSandboxId}/`;
+        return `${API_CONFIG.PREVIEW}/preview/${activeSandboxId}/`;
     };
 
     const handleRefresh = () => {

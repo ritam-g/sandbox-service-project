@@ -4,8 +4,7 @@ import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { Terminal as TermIcon, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import 'xterm/css/xterm.css';
-
-const SOCKET_URL = "https://supreme-potato-pj4v4xgpxwpvc6p4-4000.app.github.dev";
+import { API_CONFIG } from '../config/runtime';
 
 export default function Terminal({ activeSandboxId }) {
     const terminalRef = useRef(null);
@@ -55,8 +54,8 @@ export default function Terminal({ activeSandboxId }) {
         term.writeln("\x1b[90mConnecting to agent websocket session...\x1b[0m");
 
         // Socket.IO connection
-        const socket = io(SOCKET_URL, {
-            transports: ['websocket', 'polling']
+        const socket = io(API_CONFIG.AGENT, {
+            transports: ['websocket']
         });
 
         socketRef.current = socket;

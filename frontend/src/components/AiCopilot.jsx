@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Send, Loader2, Bot, User, CheckCircle2, Play, ChevronRight, Info } from 'lucide-react';
-
-const AI_API = "https://supreme-potato-pj4v4xgpxwpvc6p4-3001.app.github.dev/api/ai/agent/invoke";
+import { API_CONFIG } from '../config/runtime';
 
 export default function AiCopilot({ activeSandboxId, onFileModified }) {
     const [prompt, setPrompt] = useState("");
@@ -46,8 +45,9 @@ export default function AiCopilot({ activeSandboxId, onFileModified }) {
         setMessages(prev => [...prev, { role: "user", content: messageText }]);
 
         try {
-            const response = await fetch(AI_API, {
+            const response = await fetch(`${API_CONFIG.AI}/api/ai/agent/invoke`, {
                 method: "POST",
+                mode: "cors",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     message: messageText,
