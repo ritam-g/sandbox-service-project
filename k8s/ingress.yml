@@ -5,11 +5,21 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
 spec:
   ingressClassName: nginx
+
   rules:
     - http:
         paths:
+
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: router-service
+                port:
+                  number: 80
 
           - path: /api/ai
             pathType: Prefix
