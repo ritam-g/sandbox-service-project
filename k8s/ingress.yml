@@ -28,6 +28,13 @@ spec:
                 name: ai-service
                 port:
                   number: 80
+          - path: /api/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 80
 
           - path: /preview
             pathType: Prefix
