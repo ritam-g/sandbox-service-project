@@ -84,7 +84,7 @@ Open **4 separate split-terminal windows** inside your VS Code interface to main
 Monitors global orchestrator `/api/sandbox/start` actions.
 
 ```bash
-kubectl port-forward svc/router-service 3000:80 --address 0.0.0.0
+kubectl port-forward svc/sandbox-service 3000:80 --address 0.0.0.0
 
 ```
 
@@ -106,7 +106,7 @@ kubectl port-forward svc/ai-service 3001:80 --address 0.0.0.0
 kubectl get svc
 
 # Forward target instance agent to port 4000
-kubectl port-forward svc/agent-service-019e5a87-4293-7424-bfb9-edf85e6ad888 4000:3000 --address 0.0.0.0
+kubectl port-forward svc/agent-service-019e5f68-9def-77cb-8bd2-627142381fcd 4000:3000 --address 0.0.0.0
 
 ```
 
@@ -116,7 +116,7 @@ Renders live Vite app previews within your IDE iframe structure.
 
 ```bash
 # Forward target sandbox UI port to 5173
-kubectl port-forward svc/sandbox-service-019e5a7e-c6a8-742f-8fef-dfa5ff0575c6 5173:80 --address 0.0.0.0
+kubectl port-forward svc/sandbox-service-019e5f68-9def-77cb-8bd2-627142381fcd 5173:80 --address 0.0.0.0
 
 ```
 

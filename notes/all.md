@@ -94,6 +94,7 @@ docker build -t router:latest ./sandbox/router && \
 docker build -t template:latest ./sandbox/template && \
 docker build -t agent:latest ./sandbox/agent && \
 docker build -t ai-server:latest ./ai
+docker build -t auth:latest ./auth
 
 ```
 
@@ -109,6 +110,7 @@ kind load docker-image router:latest --name sandbox && \
 kind load docker-image template:latest --name sandbox && \
 kind load docker-image agent:latest --name sandbox && \
 kind load docker-image ai-server:latest --name sandbox
+kind load docker-image auth:latest --name sandbox
 
 ```
 
