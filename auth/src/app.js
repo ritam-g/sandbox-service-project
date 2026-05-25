@@ -4,8 +4,8 @@ import morgan from 'morgan';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
-import { Strategy as LocalStrategy } from 'passport-google-oauth20';
-
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import authRouter from './routes/auth.route.js';
 
 const app = express();
 const allowedOrigins = [
@@ -31,6 +31,18 @@ app.use(cors({
     credentials: true,
 }))
 app.use(morgan('dev'));
+app.use(passport.initialize());
+
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: '/api/auth/google/callback'
+}, (accessToken, refreshToken, profile, done) => {
+    // In a real application, you'd verify the user and store them in your database here.
+    // For this example, we'll just return the profile information.
+    return done(null, profile);
+}));
+
 
 app.get('/api/auth/health', (req, res) => {
     res.json({
@@ -38,4 +50,5 @@ app.get('/api/auth/health', (req, res) => {
     });
 });
 
+app.use('/api/auth',authRouter)
 export default app;

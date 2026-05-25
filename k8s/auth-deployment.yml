@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: auth-deployment
+  labels:
+    name: auth-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: auth
+
+  template:
+    metadata:
+      labels:
+        app: auth
+
+    spec:
+      containers:
+        - image: auth
+          name: auth-container
+          imagePullPolicy: Never
+
+          resources:
+            requests:
+              cpu: "20m"
+              memory: "55Mi"
+
+            limits:
+              cpu: "100m"
+              memory: "200Mi"
+
+          livenessProbe:
+            httpGet:
+              path: /api/auth/health
+              port: 4001
+            initialDelaySeconds: 90
+            timeoutSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /api/auth/health
+              port: 4001
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+
+          env:
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: GOOGLE_CLIENT_ID
+
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: GOOGLE_CLIENT_SECRET
+
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: MONGO_URI
+
+          ports:
+            - containerPort: 4001
+              name: auth-port
